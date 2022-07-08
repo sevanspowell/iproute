@@ -39,7 +39,7 @@ Library
                       , byteorder
                       , bytestring
                       , containers
-                      , network
+                      , deepseq
   if impl(ghc < 8.0)
      Build-Depends:     semigroups >= 0.17
   if impl(ghc >= 8)

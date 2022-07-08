@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 
@@ -12,12 +13,45 @@ import Data.List (foldl', intersperse)
 import Data.String
 import Data.Typeable (Typeable)
 import Data.Word
-import Network.Socket
 import Numeric (showHex, showInt)
 import System.ByteOrder
 import Text.Appar.String
 import GHC.Enum (succError,predError)
 import GHC.Generics
+import Control.DeepSeq (NFData (..))
+
+type HostAddress = Word32
+type HostAddress6 = (Word32, Word32, Word32, Word32)
+
+newtype PortNumber = PortNum Word16 deriving (Eq, Ord, Num, Enum, Bounded, Real, Integral)
+
+-- | Flow information.
+type FlowInfo = Word32
+-- | Scope identifier.
+type ScopeID = Word32
+
+-- | Socket addresses.
+--  The existence of a constructor does not necessarily imply that
+--  that socket address type is supported on your system: see
+-- 'isSupportedSockAddr'.
+data SockAddr
+  = SockAddrInet
+        !PortNumber      -- sin_port
+        !HostAddress     -- sin_addr  (ditto)
+  | SockAddrInet6
+        !PortNumber      -- sin6_port
+        !FlowInfo        -- sin6_flowinfo (ditto)
+        !HostAddress6    -- sin6_addr (ditto)
+        !ScopeID         -- sin6_scope_id (ditto)
+  -- | The path must have fewer than 104 characters. All of these characters must have code points less than 256.
+  | SockAddrUnix
+        String           -- sun_path
+  deriving (Eq, Ord)
+
+instance NFData SockAddr where
+  rnf (SockAddrInet _ _) = ()
+  rnf (SockAddrInet6 _ _ _ _) = ()
+  rnf (SockAddrUnix str) = rnf str
 
 ----------------------------------------------------------------
 
